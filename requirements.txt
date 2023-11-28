@@ -1,0 +1,9 @@
+tensorflow
+numpy
+pandas 
+SQLAlchemy
+fastapi
+scikit-learn
+uvicorn
+pydantic
+Pillow
