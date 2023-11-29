@@ -7,7 +7,7 @@ from langchain.vectorstores import Chroma
 from typing import List,Tuple ,Union, Any, Dict
 import os 
 import ast
-from document_generator import JsonToDocument
+from .document_generator import JsonToDocument
 
 
 

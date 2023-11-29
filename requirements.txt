@@ -12,3 +12,4 @@ langchain
 sentence-transformers
 chromadb
 uvicorn
+-e .

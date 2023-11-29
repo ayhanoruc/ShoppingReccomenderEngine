@@ -9,10 +9,12 @@ from numpy.linalg import norm
 from sklearn.decomposition import PCA
 from PIL import Image as PILImage
 from urllib.request import urlretrieve
+import uvicorn
 
-from src.database.vectorizer import VectorRetriever
 from src.database.document_generator import JsonToDocument
+from src.database.vectorizer import VectorRetriever
 
+import os 
 
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
 model_kwargs = {'device': 'cpu'}
@@ -39,7 +41,7 @@ app = FastAPI()
 # Pydantic model definitions
 class Product(BaseModel):
     description: str
-    image_url: Optional[HttpUrl]  # Image URL is optional because it's not provided in case 2
+    image_url: str  # Image URL is optional because it's not provided in case 2
 
 class User(BaseModel):
     user_id: str
@@ -143,11 +145,9 @@ def find_similar_products_from_query(query:str, product_pool:List[Product]):
     return similar_products
 
 
-def find_similar_products(product:Product):
+def find_similar_products(combined_vector):
     """returns list of similar product id's"""
     global product_vector_retriever
-    img_vector = get_vector_from_image_url(product.image_url)
-    combined_vector = product_concat(img_vector, product.description)
     result:List[tuple] = product_vector_retriever.similarity_search(combined_vector, k=3, vector_type="product") # (product_id, description)
     return result 
 
@@ -160,10 +160,10 @@ async def case1_endpoint(product: Product):
         raise HTTPException(status_code=400, detail="Image URL is required.")
     
     # Process image to vector
-    img_vector = process_image_to_vector(product.image_url)
+    img_vector = get_vector_from_image_url(product.image_url)
     
     # Concatenate img_vector and description
-    combined_vector = concatenate_vectors(img_vector, product.description)
+    combined_vector = product_concat(img_vector, product.description)
     
     # Search for similarity in vector store
     similar_products = find_similar_products(combined_vector)
@@ -183,4 +183,6 @@ async def case2_endpoint(user:User,  user_request_product:str):
 
 
 if __name__ == "__main__":
+    #run in dev mode:
+    #uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
     uvicorn.run(app, host="0.0.0.0", port=8000)
