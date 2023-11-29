@@ -7,3 +7,8 @@ scikit-learn
 uvicorn
 pydantic
 Pillow
+openpyxl
+langchain
+sentence-transformers
+chromadb
+uvicorn

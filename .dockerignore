@@ -1,0 +1,11 @@
+## all the files to ignore
+
+data/
+*env*
+*.pyc
+*.pyo
+*.log
+*.out
+*.ipynb_checkpoints
+*.ipynb
+*gitignore
