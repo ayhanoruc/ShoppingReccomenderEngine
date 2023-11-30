@@ -8,7 +8,7 @@ import numpy as np
 from numpy.linalg import norm
 from sklearn.decomposition import PCA
 from PIL import Image as PILImage
-from urllib.request import urlretrieve
+from urllib.request import urlretrieve # to download images from url
 import uvicorn
 
 from src.database.document_generator import JsonToDocument
@@ -50,20 +50,21 @@ class User(BaseModel):
 
 # Step 1: Load Pre-trained CNN
 base_model = ResNet50(weights='imagenet')
-# We'll use the output of the layer just before the final dense layer (usually named 'avg_pool' for ResNet)
+# We'll use the output of the layer just before the final dense layer-- the "avg_pool",
+# to extract rich/high-level features.
 model = Model(inputs=base_model.input, outputs=base_model.get_layer('avg_pool').output)
 
 # Step 2: Preprocess the Image
 def preprocess_image_pillow(img_path):
     img = PILImage.open(img_path)
-    img = img.resize((224, 224))  # Resize image to 224x224
+    img = img.resize((224, 224))  # required for our base model: ResNet50 trained on imagenet.
     img_array = np.array(img)
     
-    # If the image has an alpha channel, we should remove it
+    # remove alpha channel, since ResNet50 expects 3-channel RGB images.
     if img_array.shape[2] == 4:
         img_array = img_array[:, :, :3]
 
-    # Convert the image array to float and rescale it
+    # normalization process
     img_array = img_array.astype(np.float32)
     img_array = np.expand_dims(img_array, axis=0)
     img_array = preprocess_input(img_array)  # correct preprocess_input function for the model
@@ -73,17 +74,17 @@ def preprocess_image_pillow(img_path):
 # Step 3: Extract Features
 def extract_features(img_path, model):
     preprocessed_image = preprocess_image_pillow(img_path)
-    features = model.predict(preprocessed_image)
-    flattened_features = features.flatten()  # Flatten the features to a 1D array
+    features = model.predict(preprocessed_image) # rich/high-level features
+    flattened_features = features.flatten()  # Flatten the features to 1D array.
     return flattened_features
 
-# Step 4: Normalize Features
+# Step 4: normalization process
 def normalize_features(features):
-    # Normalize feature vector (L2 norm)
     normalized_features = features / np.linalg.norm(features)
     return normalized_features
 
-# Step 5: Reduce Dimensionality
+# Step 5: adjust # of components for our usecase,
+# where we want to align image feature vectors w/ product feature vectors.
 def reduce_dimensionality(features, n_components=300):
     
     pca = PCA(n_components=n_components)
@@ -92,7 +93,7 @@ def reduce_dimensionality(features, n_components=300):
     reduced_features = pca.transform(features)
     return reduced_features
 
-# Function to calculate cosine similarity
+# calculate cosine similarity
 def cosine_similarity(vec_a, vec_b):
     similarity = np.dot(vec_a, vec_b) / (norm(vec_a) * norm(vec_b))
     return similarity
